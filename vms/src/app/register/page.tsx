@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { WebcamCapture } from '@/components/webcam-capture';
@@ -11,34 +12,51 @@ const RegisterPage: React.FC = () => {
   const [image, setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
+    if (!images || images.length === 0) {
+      setError('Please capture an image');
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      // Remove the prefix 'data:image/jpeg;base64,' before sending
+
       const response = await fetch('http://localhost:5000/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, image }),
+        body: JSON.stringify({
+          name,
+          email,
+          images: images.map((img) => img.split(',')[1]),
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Registration failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
       }
 
       alert('Registration successful!');
       setName('');
       setEmail('');
       setImage(null);
-    } catch (err) {
-      setError('An error occurred during registration');
+    } catch (err: any) {
+      setError(err?.message);
     } finally {
       setIsLoading(false);
     }
+  };
+  const handleCapture = (newImage: string) => {
+    setImages((prevImages) => [...prevImages, newImage]);
   };
 
   return (
@@ -77,7 +95,7 @@ const RegisterPage: React.FC = () => {
             className="w-full px-3 py-2 border rounded"
           />
         </div>
-        <WebcamCapture onCapture={setImage} />
+        <WebcamCapture onCapture={handleCapture} />
         {image && (
           <div className="mt-4">
             <img
