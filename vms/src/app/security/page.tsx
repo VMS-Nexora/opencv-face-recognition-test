@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import UserModal from '@/components/user-modal';
+import { UserModal } from '@/components/user-modal';
 import { WebcamCapture } from '@/components/webcam-capture';
 import type React from 'react';
 import { useState, useEffect, useRef } from 'react';
@@ -19,7 +19,6 @@ const SecurityPage: React.FC = () => {
 
   const startScanning = () => {
     setIsScanning(true);
-    scanIntervalRef.current = window.setInterval(scanFace, 5000); // Scan every 5 seconds
   };
 
   const stopScanning = () => {
@@ -30,27 +29,27 @@ const SecurityPage: React.FC = () => {
   };
 
   const scanFace = async (image: string) => {
-    try {
-      const response = await fetch('http://localhost:5000/api/checkin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image }),
-      });
+    const response = await fetch('http://127.0.0.1:5000/api/checkin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ image }),
+    });
 
-      if (!response.ok) {
-        throw new Error('Check-in failed');
-      }
+    const data = await response.json();
 
-      const data = await response.json();
-      if (data.match) {
-        setMatchedUser(data.user);
-        stopScanning();
-      }
-    } catch (err) {
-      setError('An error occurred during check-in');
+    if (data?.error) {
+      alert(`${data.error}`);
+      return;
+    }
+
+    if (data.match) {
+      setMatchedUser(data);
       stopScanning();
+    } else {
+      console.log('No match found');
+      setError('No match found');
     }
   };
 
